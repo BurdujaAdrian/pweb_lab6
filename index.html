@@ -7,22 +7,17 @@
 		const cards = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
 		const suits = ['clubs','diamonds','hearts','spades'];
 
-		Alpine.store('cards', cards);
-		Alpine.store('suits', suits);
-		Alpine.store('deck', {
-			cards: cards.flatMap(card => suits.map(suit => ({ card, suit }))).toSorted(() => Math.random() - 0.5),
-			draw(x) {
-				const drawn = this.cards.slice(0, x);
-				console.log(drawn.length);
-				this.cards = this.cards.slice(x);
-				console.log(this.cards.length);
-				return drawn;
-			},
+		Alpine.store('game', {
+			// gamestate
+			deck: cards.flatMap(card => suits.map(suit => ({ card, suit }))).toSorted(() => Math.random() - 0.5),
+			weapon: null,
+			durability: [],
+			dungeon: [],
+			hp:20,
+
+			// game functions 
 			image(card) {
 				return "playing-cards/" + card.suit + "_" + card.card + ".png"
-			},
-			reset_deck() {
-				this.cards = cards.flatMap(card => suits.map(suit => ({ card, suit }))).toSorted(() => Math.random() - 0.5)
 			},
 			value(card) {
 					if( !isNaN(Number(card)) ){ return Number(card) }
@@ -33,6 +28,49 @@
 					if (card == 'J'){ return 11}
 
 					return 0;
+			},
+
+			// game methods
+			draw(x) {
+				const drawn = this.deck.slice(0, x);
+				console.log(drawn.length);
+				this.deck = this.deck.slice(x);
+				console.log(this.deck.length);
+				return drawn;
+			},
+			click_card(idx) {
+				// remove element at idx
+				const clicked = this.dungeon.splice(idx,1)[0];
+				const value = Alpine.store('game').value(clicked.card);
+
+				if(value > 10){
+					// named cards are never potions or weapons
+					this.hp = this.hp - value
+					return
+				}
+
+				if(clicked.suit == 'diamonds'){
+					// take up as weapon
+					this.weapon = clicked;
+					return;
+				}
+
+				if(clicked.suit == 'hearts'){
+					// heal
+					this.hp = Math.min((this.hp + value) , 20);
+					return;
+				}
+
+				if(clicked.suit == 'clubs' || clicked.suit == 'spades'){
+					// battle
+					this.hp = this.hp - value
+					return;
+				}
+			},
+			reset(){
+				this.deck = cards.flatMap(card => suits.map(suit => ({ card, suit }))).toSorted(() => Math.random() - 0.5)
+				this.dungeon = Alpine.store('game').draw(4);
+				this.hp = 20;
 			}
 		});
 
@@ -42,65 +80,26 @@
 
 	<body>
 		<div x-data="{
-			deck: () => $store.deck.cards, 
-			draw: (x) => $store.deck.draw(x),
-			image: (item) => $store.deck.image(item),
-			weapon: null,
-			durability: [],
-			dungeon: [],
-			hp:20,
-			reset: function(){
-				$store.deck.reset_deck();
-				this.hand = [];
-				this.dungeon = $store.deck.draw(4);
-				this.hp = 20;
-			},
-			click_card: function(idx){
-
-				// remove element at idx
-				const clicked = this.dungeon.splice(idx,1)[0];
-				const value = $store.deck.value(clicked.card);
-				console.log(value, clicked.card)
-				if(clicked.suit == 'diamonds'){
-					// take up as weapon
-					this.weapon = clicked;
-					return;
-				}
-
-				if(clicked.suit == 'hearts'){
-					// heal
-					this.hp = (this.hp + value) % 20;
-				}
-
-				if(clicked.suit == 'clubs' || clicked.suit == 'spades'){
-					this.hp = this.hp - value
-				}
-			}
-		}"
-			x-init="
-			dungeon = draw(4);
-			"
-		>
-			<template x-if="hp>0">
+			draw: (x) => $store.game.draw(x),
+			image: (item) => $store.game.image(item),
+			reset: () => $store.game.reset(),
+			click_card: (idx) => $store.game.click_card(idx),
+		}" x-init="reset()" >
+			<template x-if="$store.game.hp>0">
 				<div>
-					<div>
-						<p> Dungeon:</p>
-						<p x-text="'hp'+hp"></p>
-						<template x-for="(card,idx) in dungeon">
-							<button x-on:click="click_card(idx)">
-								<img :src="image(card)">
-							</button>
-						</template>
-					</div>
-
+					<p> Dungeon:</p>
+					<p x-text="'hp'+$store.game.hp"></p>
+					<template x-for="(card,idx) in $store.game.dungeon">
+						<button x-on:click="click_card(idx)">
+							<img :src="image(card)">
+						</button>
+					</template>
 				</div>
 			</template>
-			<template x-if="hp<=0">
+			<template x-if="$store.game.hp<=0">
 				<div>
 					<p> you lost</p>
-					<button type="button" x-on:click="
-						reset();
-						">Try again</button>
+					<button type="button" x-on:click="reset()">Try again</button>
 				</div>
 			</template>
 
