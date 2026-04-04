@@ -2,9 +2,109 @@
 <html>
 	<head>
 		<script src="packages/alpine.min.js" defer> </script>
+	<script>
+		document.addEventListener('alpine:init', () => {
+		const cards = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+		const suits = ['clubs','diamonds','hearts','spades'];
+
+		Alpine.store('cards', cards);
+		Alpine.store('suits', suits);
+		Alpine.store('deck', {
+			cards: cards.flatMap(card => suits.map(suit => ({ card, suit }))).toSorted(() => Math.random() - 0.5),
+			draw(x) {
+				const drawn = this.cards.slice(0, x);
+				console.log(drawn.length);
+				this.cards = this.cards.slice(x);
+				console.log(this.cards.length);
+				return drawn;
+			},
+			image(card) {
+				return "playing-cards/" + card.suit + "_" + card.card + ".png"
+			},
+			reset_deck() {
+				this.cards = cards.flatMap(card => suits.map(suit => ({ card, suit }))).toSorted(() => Math.random() - 0.5)
+			},
+			value(card) {
+					if( !isNaN(Number(card)) ){ return Number(card) }
+
+					if (card == 'A'){ return 14}
+					if (card == 'K'){ return 13}
+					if (card == 'Q'){ return 12}
+					if (card == 'J'){ return 11}
+
+					return 0;
+			}
+		});
+
+	  });
+	</script>
 	</head>
 
 	<body>
+		<div x-data="{
+			deck: () => $store.deck.cards, 
+			draw: (x) => $store.deck.draw(x),
+			image: (item) => $store.deck.image(item),
+			weapon: null,
+			durability: [],
+			dungeon: [],
+			hp:20,
+			reset: function(){
+				$store.deck.reset_deck();
+				this.hand = [];
+				this.dungeon = $store.deck.draw(4);
+				this.hp = 20;
+			},
+			click_card: function(idx){
+
+				// remove element at idx
+				const clicked = this.dungeon.splice(idx,1)[0];
+				const value = $store.deck.value(clicked.card);
+				console.log(value, clicked.card)
+				if(clicked.suit == 'diamonds'){
+					// take up as weapon
+					this.weapon = clicked;
+					return;
+				}
+
+				if(clicked.suit == 'hearts'){
+					// heal
+					this.hp = (this.hp + value) % 20;
+				}
+
+				if(clicked.suit == 'clubs' || clicked.suit == 'spades'){
+					this.hp = this.hp - value
+				}
+			}
+		}"
+			x-init="
+			dungeon = draw(4);
+			"
+		>
+			<template x-if="hp>0">
+				<div>
+					<div>
+						<p> Dungeon:</p>
+						<p x-text="'hp'+hp"></p>
+						<template x-for="(card,idx) in dungeon">
+							<button x-on:click="click_card(idx)">
+								<img :src="image(card)">
+							</button>
+						</template>
+					</div>
+
+				</div>
+			</template>
+			<template x-if="hp<=0">
+				<div>
+					<p> you lost</p>
+					<button type="button" x-on:click="
+						reset();
+						">Try again</button>
+				</div>
+			</template>
+
+		</div>
 		<p> hello html </p>
 	</body>
 
