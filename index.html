@@ -8,72 +8,127 @@
 		const suits = ['clubs','diamonds','hearts','spades'];
 
 		Alpine.store('game', {
-			// gamestate
-			deck: cards.flatMap(card => suits.map(suit => ({ card, suit }))).toSorted(() => Math.random() - 0.5),
-			weapon: null,
-			durability: [],
-			dungeon: [],
-			hp:20,
+				// gamestate
+				deck: cards.flatMap(card => suits.map(suit => ({ card, suit }))).toSorted(() => Math.random() - 0.5),
+				weapon: null,
+				durability: [],
+				equipped: false,
+				ran: false,
+				healed: false,
+				dungeon: [],
+				hp:20,
 
-			// game functions 
-			image(card) {
-				return "playing-cards/" + card.suit + "_" + card.card + ".png"
-			},
-			value(card) {
-					if( !isNaN(Number(card)) ){ return Number(card) }
+				// game functions 
+				image(card) { return "playing-cards/" + card.suit + "_" + card.card + ".png" },
+				value(card) {
+						if( !isNaN(Number(card)) ){ return Number(card) }
 
-					if (card == 'A'){ return 14}
-					if (card == 'K'){ return 13}
-					if (card == 'Q'){ return 12}
-					if (card == 'J'){ return 11}
+						if (card == 'A'){ return 14}
+						if (card == 'K'){ return 13}
+						if (card == 'Q'){ return 12}
+						if (card == 'J'){ return 11}
 
-					return 0;
-			},
+						return 0;
+				},
 
-			// game methods
-			draw(x) {
-				const drawn = this.deck.slice(0, x);
-				console.log(drawn.length);
-				this.deck = this.deck.slice(x);
-				console.log(this.deck.length);
-				return drawn;
-			},
-			click_card(idx) {
-				// remove element at idx
-				const clicked = this.dungeon.splice(idx,1)[0];
-				const value = Alpine.store('game').value(clicked.card);
+				// game methods
+				draw(x) {
+					const drawn = this.deck.slice(0, x);
+					console.log(drawn.length);
+					this.deck = this.deck.slice(x);
+					console.log(this.deck.length);
+					return drawn;
+				},
+				estimate(card){
+					return "idk"
+				},
+				click_card(idx) {
+					// remove element at idx
+					const clicked = this.dungeon.splice(idx,1)[0];
+					const game = Alpine.store('game');
+					const value = game.value(clicked.card);
 
-				if(value > 10){
-					// named cards are never potions or weapons
-					this.hp = this.hp - value
-					return
-				}
+					// replenish cards
+					if(this.dungeon.length == 1){
+						this.dungeon.push(...game.draw(3));
+						// rest once per turn effects
+						this.healed = false;
+						this.ran = false;
+					}
 
-				if(clicked.suit == 'diamonds'){
-					// take up as weapon
-					this.weapon = clicked;
-					return;
-				}
+					// only numeric cards have special purposes
+					if(value <= 10){
+						console.log("special cards");
+						if(clicked.suit == 'diamonds'){
+							// take up as weapon
+							this.weapon = clicked;
+							this.durability = []; // reset durability
+							this.equipeed = true; //default to equipping the weapon
+							return;
+						}
 
-				if(clicked.suit == 'hearts'){
-					// heal
-					this.hp = Math.min((this.hp + value) , 20);
-					return;
-				}
+						if(clicked.suit == 'hearts'){
+							// heal
+							if(!this.healed){
+								this.hp = Math.min((this.hp + value) , 20);
+								this.healed = true;
+							} else {
+								console.log("Already healed this turn");
+							}
+							return;
+						}
+						// else combat
+						console.log("should battle")
+					}
 
-				if(clicked.suit == 'clubs' || clicked.suit == 'spades'){
 					// battle
-					this.hp = this.hp - value
-					return;
-				}
-			},
-			reset(){
-				this.deck = cards.flatMap(card => suits.map(suit => ({ card, suit }))).toSorted(() => Math.random() - 0.5)
-				this.dungeon = Alpine.store('game').draw(4);
-				this.hp = 20;
-			}
-		});
+					if(this.weapon != null && this.equipped) {
+						console.log("has equipped weapon");
+						// has weapon and is equipped
+						const top = this.durability.at(-1);
+						const block = game.value(this.weapon.card)
 
+						var dur = 15;
+						if(top != null){ dur = game.value(top.card); }
+
+						console.log(top,dur);
+						if(value < dur){
+							// can block with weapon
+							console.log(-value+block);
+							this.hp = this.hp + Math.min( block - value , 0); // if value < block, take 0 damage rahter then healing
+
+							this.durability.push(clicked);
+							return;
+						} else {
+							console.log("couldn't block");
+						}
+
+					} 
+
+					// bare-handed combat
+					this.hp = this.hp - value;
+					return
+				},
+				reset(){
+					this.deck = cards.flatMap(card => suits.map(suit => ({ card, suit }))).toSorted(() => Math.random() - 0.5)
+					this.dungeon = Alpine.store('game').draw(4);
+					this.weapon = null;
+					this.durability = [];
+					this.equipped = false;
+					this.hp = 20;
+					this.ran =  false;
+					this.healed =  false;
+				},
+				run_away(){
+					if(!this.ran){
+						this.deck.push(...this.dungeon);
+						this.dungeon = Alpine.store('game').draw(4);
+						this.ran = true;
+					} else {
+						console.log("Already ran once");
+					}
+				}
+		});
 	  });
 	</script>
 	</head>
@@ -84,18 +139,54 @@
 			image: (item) => $store.game.image(item),
 			reset: () => $store.game.reset(),
 			click_card: (idx) => $store.game.click_card(idx),
+			run_away: () => $store.game.run_away(),
+			estimate_val: (card) => $store.game.estimate(card)
 		}" x-init="reset()" >
 			<template x-if="$store.game.hp>0">
 				<div>
-					<p> Dungeon:</p>
 					<p x-text="'hp'+$store.game.hp"></p>
+					<p> Dungeon:</p>
+					<button :disabled="$store.game.dungeon.length < 4" type="button" x-on:click="run_away()">Run away</button>
+
 					<template x-for="(card,idx) in $store.game.dungeon">
 						<button x-on:click="click_card(idx)">
-							<img :src="image(card)">
+							<div style="position:relative; display:inline-block;" 
+								x-data="{show: false}"
+								@mouseenter="show=true" 
+								@mouseleave="show=false">
+								<img :src="image(card)">
+								<span x-show="show" 
+										x-text="estimate_val(card)"
+										style="position:absolute; background:black; color:white; padding:4px; z-index:1000;">
+								</span>
+							</div>
 						</button>
 					</template>
+
+					<p> Weapon:
+						<template x-if="$store.game.equipped == true">
+							<span> equipped </span>
+						</template>
+					</p>
+
+
+					<template x-if="$store.game.weapon != null">
+						<div>
+							<button x-on:click="$store.game.equipped =!$store.game.equipped">
+								<img :src="image($store.game.weapon)">
+							</button>
+							<div>
+								<p> Durability:</p>
+								<template x-for="card in $store.game.durability">
+									<img :src="image(card)">
+								</template>
+							<div>
+						</div>
+					</template>
+
 				</div>
 			</template>
+
 			<template x-if="$store.game.hp<=0">
 				<div>
 					<p> you lost</p>
@@ -104,7 +195,6 @@
 			</template>
 
 		</div>
-		<p> hello html </p>
 	</body>
 
 </html>
