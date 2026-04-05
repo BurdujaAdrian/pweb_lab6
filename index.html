@@ -6,10 +6,17 @@
 		document.addEventListener('alpine:init', () => {
 		const cards = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
 		const suits = ['clubs','diamonds','hearts','spades'];
+		const valid_cards = cards.flatMap( card => suits.map(suit => ({ card, suit }))).filter(
+					el=> {
+						const legal = !(isNaN(Number(el.card)) && (el.suit == 'hearts' || el.suit=='diamonds'));
+						if(!legal) console.log(el);
+						return legal
+					}
+				);
 
 		Alpine.store('game', {
 				// gamestate
-				deck: cards.flatMap(card => suits.map(suit => ({ card, suit }))).toSorted(() => Math.random() - 0.5),
+				deck: valid_cards.toSorted(() => Math.random() - 0.5),
 				weapon: null,
 				durability: [],
 				equipped: false,
@@ -165,7 +172,7 @@
 					return
 				},
 				reset(){
-					this.deck = cards.flatMap(card => suits.map(suit => ({ card, suit }))).toSorted(() => Math.random() - 0.5)
+					this.deck = valid_cards.toSorted(() => Math.random() - 0.5);
 					this.dungeon = Alpine.store('game').draw(4);
 					this.weapon = null;
 					this.durability = [];
