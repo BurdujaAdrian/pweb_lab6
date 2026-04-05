@@ -2,6 +2,7 @@
 <html>
 	<head>
 		<script src="packages/alpine.min.js" defer> </script>
+		<link rel="stylesheet" href="./styles.css">
 	<script>
 		document.addEventListener('alpine:init', () => {
 		const cards = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
@@ -19,7 +20,7 @@
 				deck: valid_cards.toSorted(() => Math.random() - 0.5),
 				weapon: null,
 				durability: [],
-				equipped: false,
+				equipped: true,
 				ran: false,
 				healed: false,
 				dungeon: [],
@@ -52,6 +53,7 @@
 					console.log(value);
 
 					// only numeric cards have special purposes
+					// also there are no diamonds/hearts with value above 10
 					if(value <= 10){
 						if(card.suit == 'diamonds'){
 							// take up as weapon
@@ -71,7 +73,7 @@
 						// else combat
 					}
 
-					// battle
+					// battle with weapon
 					if(this.weapon != null && this.equipped) {
 						// has weapon and is equipped
 						const top = this.durability.at(-1);
@@ -125,7 +127,7 @@
 							// take up as weapon
 							this.weapon = clicked;
 							this.durability = []; // reset durability
-							this.equipeed = true; //default to equipping the weapon
+							this.equipped = true; //default to equipping the weapon
 							return;
 						}
 
@@ -196,7 +198,9 @@
 	</head>
 
 	<body>
-		<div x-data="{
+		<div
+			class="Game",
+			x-data="{
 			draw: (x) => $store.game.draw(x),
 			image: (item) => $store.game.image(item),
 			reset: () => $store.game.reset(),
@@ -205,56 +209,85 @@
 			estimate_val: (card) => $store.game.estimate(card)
 		}" x-init="reset()" >
 			<template x-if="$store.game.hp>0">
-				<div>
-					<p x-text="'hp'+$store.game.hp"></p>
-					<p> Dungeon: <span x-text="$store.game.deck.length"></span> </p>
-					<button :disabled="$store.game.dungeon.length < 4" type="button" x-on:click="run_away()">Run away</button>
 
-					<template x-for="(card,idx) in $store.game.dungeon">
-						<button x-on:click="click_card(idx)">
-							<div style="position:relative; display:inline-block;" 
-								x-data="{show: false}"
-								@mouseenter="show=true" 
-								@mouseleave="show=false">
-								<img :src="image(card)">
-								<span x-show="show" 
-										x-text="estimate_val(card)"
-										style="position:absolute; background:black; color:white; padding:4px; z-index:1000;">
-								</span>
+				<div class="Play-area">
+					<p x-text="'hp'+$store.game.hp"></p>
+					<div class="Top-row">
+						<button :disabled="$store.game.dungeon.length < 4" type="button" x-on:click="run_away()">
+							<div class="Deck">
+								<img src="./playing-cards/back_dark.png">
+								<p x-text="`Deck: ${$store.game.deck.length}`" > </p>
+								<span> Run away </span>
 							</div>
 						</button>
-					</template>
 
-					<p> Weapon:
-						<template x-if="$store.game.equipped == true">
-							<span> equipped </span>
-						</template>
-					</p>
-
-
-					<template x-if="$store.game.weapon != null">
-						<div>
-							<button x-on:click="$store.game.equipped =!$store.game.equipped">
-								<img :src="image($store.game.weapon)">
-							</button>
-							<div>
-								<p> Durability:</p>
-								<template x-for="card in $store.game.durability">
-									<img :src="image(card)">
-								</template>
-							<div>
+						<div class="Dungeon-entities">
+							<template x-for="(card,idx) in $store.game.dungeon">
+								<button x-on:click="click_card(idx)">
+									<div style="position:relative; display:inline-block;" 
+										x-data="{show: false}"
+										@mouseenter="show=true" 
+										@mouseleave="show=false">
+										<img :src="image(card)">
+										<span x-show="show" 
+												x-text="estimate_val(card)"
+												style="position:absolute; background:black; color:white; padding:4px; z-index:1000;">
+										</span>
+									</div>
+								</button>
+							</template>
 						</div>
-					</template>
+					</div>
+
+					<div class="Player-weapon">
+						<p> Weapon:
+							<template x-if="$store.game.equipped == true">
+								<span> equipped </span>
+							</template>
+						</p>
+
+
+						<div class="Weapon-slot">
+							<template x-if="$store.game.weapon != null">
+								<div>
+									<button x-on:click="$store.game.equipped =!$store.game.equipped">
+										<img :src="image($store.game.weapon)">
+									</button>
+
+									<div class="Durability-stack">
+										<template x-for="(card,idx) in $store.game.durability">
+											<img :src="image(card)" :style="{
+												transform: `translate(-${(idx+1)*40}px, 0px)`,
+												zIndex: -(idx+1)
+											}">
+										</template>
+									</div>
+
+								</div>
+							</template>
+						</div>
+					</div>
 
 				</div>
 			</template>
 
-			<template x-if="$store.game.hp<=0">
-				<div>
-					<p> you lost</p>
-					<button type="button" x-on:click="reset()">Try again</button>
-				</div>
-			</template>
+			<div class="Lose-screen">
+				<template x-if="$store.game.hp<=0">
+					<div>
+						<p> you lost</p>
+						<button type="button" x-on:click="reset()">Try again</button>
+					</div>
+				</template>
+			</div>
+
+			<div class="Win-screen">
+				<template x-if="$store.game.hp>0 && $store.game.deck.length == 0">
+					<div>
+						<p> You Won !!!</p>
+						<button type="button" x-on:click="reset()">Play again</button>
+					</div>
+				</template>
+			</div>
 
 		</div>
 	</body>
