@@ -40,7 +40,62 @@
 					return drawn;
 				},
 				estimate(card){
-					return "idk"
+					const game = Alpine.store('game');
+					const value = game.value(card.card);
+					console.log(value);
+
+					// only numeric cards have special purposes
+					if(value <= 10){
+						if(card.suit == 'diamonds'){
+							// take up as weapon
+							return `Take ${card.card} of ${card.suit} as weapon`;
+						}
+
+						if(card.suit == 'hearts'){
+							// heal
+							if(!this.healed){
+								const new_hp = Math.min((this.hp + value) , 20);
+								const hp_rec = new_hp - this.hp
+								return `Recover ${hp_rec} hp`;
+							} else {
+								return "Already healed this turn,\nyou will heal for 0";
+							}
+						}
+						// else combat
+					}
+
+					// battle
+					if(this.weapon != null && this.equipped) {
+						// has weapon and is equipped
+						const top = this.durability.at(-1);
+						const block = game.value(this.weapon.card)
+
+						var dur = 15;
+						if(top != null){ dur = game.value(top.card); }
+
+						console.log(top,dur);
+						if(value < dur){
+							// can block with weapon
+							console.log(-value+block);
+							const lost_hp = Math.min( block - value , 0); // if value < block, take 0 damage rahter then healing
+
+							const msg = `Will lose ${lost_hp} hp`
+							console.log(msg);
+							return msg;
+						} else {
+							const lost_hp = value;
+							const msg = `Can't block, too little durability: ${block}<${value}\nWill lose ${lost_hp} hp`;
+							console.log(msg);
+							return msg;
+						}
+
+					} 
+
+					// bare-handed combat
+					const lost_hp = value;
+					const msg =  `Will lose ${lost_hp} hp`;
+					console.log(msg);
+					return msg;
 				},
 				click_card(idx) {
 					// remove element at idx
@@ -145,7 +200,7 @@
 			<template x-if="$store.game.hp>0">
 				<div>
 					<p x-text="'hp'+$store.game.hp"></p>
-					<p> Dungeon:</p>
+					<p> Dungeon: <span x-text="$store.game.deck.length"></span> </p>
 					<button :disabled="$store.game.dungeon.length < 4" type="button" x-on:click="run_away()">Run away</button>
 
 					<template x-for="(card,idx) in $store.game.dungeon">
