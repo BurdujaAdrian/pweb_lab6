@@ -281,7 +281,7 @@
 			</div>
 
 			<div class="Win-screen">
-				<template x-if="$store.game.hp>0 && $store.game.deck.length == 0">
+				<template x-if="$store.game.hp>0 && $store.game.deck.length == 0 && $store.game.dungeon.length==0">
 					<div>
 						<p> You Won !!!</p>
 						<button type="button" x-on:click="reset()">Play again</button>
