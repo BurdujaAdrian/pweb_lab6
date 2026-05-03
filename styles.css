@@ -236,6 +236,14 @@ button {
 
 /* === MOBILE === */
 @media (max-width: 600px) {
+    :root {
+        --card-width: 100px;
+    }
+
+    body {
+        font-size: 2rem;
+    }
+
     .Top-row {
         flex-direction: column;
         align-items: center;
