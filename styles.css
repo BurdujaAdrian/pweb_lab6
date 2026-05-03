@@ -233,3 +233,15 @@ button {
     font-family: inherit;
     /* font-size: 1rem; */
 }
+
+/* === MOBILE === */
+@media (max-width: 600px) {
+    .Top-row {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .Dungeon-entities {
+        grid-template-columns: repeat(2, var(--card-width));
+    }
+}
