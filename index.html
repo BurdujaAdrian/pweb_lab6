@@ -163,6 +163,7 @@
 							this.hp = this.hp + Math.min( block - value , 0); // if value < block, take 0 damage rahter then healing
 
 							this.durability.push(clicked);
+							if(len(this.durability) > 4) this.durability.shift();
 							return;
 						} else {
 							console.log("couldn't block");
