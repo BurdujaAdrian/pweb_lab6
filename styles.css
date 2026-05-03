@@ -244,6 +244,11 @@ button {
         font-size: 2rem;
     }
 
+    .Card-tooltip {
+        display: none;
+    }
+
+    
     .Top-row {
         flex-direction: column;
         align-items: center;
