@@ -208,6 +208,31 @@
 			run_away: () => $store.game.run_away(),
 			estimate_val: (card) => $store.game.estimate(card)
 		}" x-init="reset()" >
+			<div x-data="{ showRules: false }">
+			    <button type="button" x-on:click="showRules = true" style="padding: 8px 20px; background:#e0d7c6; color:#1a1a2e; border:none; cursor:pointer; border-radius:6px;">
+			        Rules
+			    </button>
+			
+			    <template x-if="showRules">
+			        <div class="Rules-overlay" x-on:click.self="showRules = false">
+			            <div class="Rules-modal">
+			                <h2>Scoundrel Rules</h2>
+			                <button class="Rules-close" x-on:click="showRules = false">✕</button>
+			                <div class="Rules-body">
+			                    <p><strong>Goal:</strong> Clear the dungeon without dying.</p>
+			                    <p><strong>Deck:</strong> Standard deck, red face cards (J/Q/K/A of hearts & diamonds) removed.</p>
+			                    <p><strong>Each turn:</strong> Four cards are dealt. You must pick one to leave behind, then play the other three.</p>
+			                    <p><strong>♣ ♠ Clubs & Spades (monsters):</strong> Their value is damage dealt to you. Fight bare-handed to take full damage.</p>
+			                    <p><strong>♦ Diamonds (weapons):</strong> Pick up as your equipped weapon. Weapon value blocks monster damage (take 0 if weapon ≥ monster). Each weapon can only block monsters weaker than the last one it blocked.</p>
+			                    <p><strong>♥ Hearts (potions):</strong> Heal HP equal to card value, up to 20. Only one potion per room.</p>
+			                    <p><strong>Weapon toggle:</strong> Click your weapon card to equip/unequip it before fighting.</p>
+			                    <p><strong>Run away:</strong> Shuffle the room back into the deck and draw a new one. Can only run once per room.</p>
+			                    <p><strong>Win:</strong> Exhaust the deck. <strong>Lose:</strong> HP reaches 0.</p>
+			                </div>
+			            </div>
+			        </div>
+			    </template>
+			</div>
 			<template x-if="$store.game.hp>0">
 
 				<div class="Play-area">
