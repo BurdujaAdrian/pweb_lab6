@@ -76,6 +76,7 @@
 
 					// battle with weapon
 					if(this.weapon != null && this.equipped) {
+						console.log("This weapon:",this.weapon);
 						// has weapon and is equipped
 						const top = this.durability.at(-1);
 						const block = game.value(this.weapon.card)
@@ -83,7 +84,7 @@
 						var dur = 15;
 						if(top != null){ dur = game.value(top.card); }
 
-						console.log(top,dur);
+						console.log("Top card:", top, " Has durability: ",dur);
 						if(value < dur){
 							// can block with weapon
 							console.log(-value+block);
@@ -94,7 +95,7 @@
 							return msg;
 						} else {
 							const lost_hp = value;
-							const msg = `Can't block, too little durability: ${block}<${value}\nWill lose ${lost_hp} hp`;
+							const msg = `Can't block, too little durability: ${dur}<${value}\nWill lose ${lost_hp} hp`;
 							console.log(msg);
 							return msg;
 						}
@@ -163,7 +164,7 @@
 							this.hp = this.hp + Math.min( block - value , 0); // if value < block, take 0 damage rahter then healing
 
 							this.durability.push(clicked);
-							if(len(this.durability) > 4) this.durability.shift();
+							if(this.durability.length > 4) this.durability.shift();
 							return;
 						} else {
 							console.log("couldn't block");
